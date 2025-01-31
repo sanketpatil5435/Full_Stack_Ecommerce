@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 
 // Route to create a new user
 app.post("/users", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, age } = req.body;
   console.log(req.body);
 
   try {
@@ -19,6 +19,7 @@ app.post("/users", async (req, res) => {
         name,
         email,
         password, // In a real app, hash this password!
+        age,
       },
     });
 

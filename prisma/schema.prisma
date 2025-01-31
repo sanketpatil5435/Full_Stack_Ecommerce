@@ -19,5 +19,7 @@ model User{
   name String? 
   email String
   password String?
+  age Int?
   created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 }
