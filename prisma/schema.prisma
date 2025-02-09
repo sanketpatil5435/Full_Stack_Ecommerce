@@ -13,13 +13,180 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  CUSTOMER
+  SUPPLIER
+}
 
-model User{
-  id Int @id @default(autoincrement())
-  name String? 
-  email String
-  password String?
-  age Int?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+model User {
+  id          String    @id @default(uuid())
+  name        String
+  email       String    @unique
+  phoneNumber String?
+  password    String?
+  avatar      String?
+  role        Role      @default(CUSTOMER)
+  order       Order[]
+  cart        Cart?
+  wishlist    Wishlist?
+  verified    Boolean
+  dob         DateTime?
+  addresses   Address[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Review      Review[]
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  street    String
+  city      String
+  state     String
+  country   String
+  zipcode   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Order     Order[]
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  products  Product[]
+  approved  Boolean   @default(false) // Admin approval for supplier
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stockQty    Int            @default(0)
+  supplier    Supplier       @relation(fields: [supplierId], references: [id])
+  supplierId  String
+  category    Category       @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  orders      OrderItem[]
+  cartItems   CartItem[]
+  wishlist    WishlistItem[]
+  reviews     Review[]
+  images      String[]
+  isActive    Boolean        @default(true)
+  rating      Decimal
+  discount    Int            @default(0)
+  attributes  Json
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          String
+  status          OrderStatus @default(PENDING)
+  totalAmount     Float
+  items           OrderItem[]
+  payment         Payment?
+  itemsPrice      Int
+  taxPrice        Int
+  toatalPrice     Int
+  deliveredAt     DateTime?
+  isPaid          Boolean
+  address         Address     @relation(fields: [shippingAddress], references: [id])
+  shippingAddress String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  cartId    String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  user      User           @relation(fields: [userId], references: [id])
+  userId    String         @unique
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id])
+  wishlistId String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  order     Order         @relation(fields: [orderId], references: [id])
+  orderId   String        @unique
+  status    PaymentStatus
+  paymentId String? // Razorpay payment ID
+  createdAt DateTime      @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Float    @default(0.0) // Rating (1-5 stars)
+  comment   String? // Optional review text
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId]) // Ensures a user can review a product only once
 }
